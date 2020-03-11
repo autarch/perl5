@@ -25181,6 +25181,7 @@ S_handle_names_wildcard(pTHX_ const char * wname, /* wildcard name to match */
             }
         }
     }
+        /* XXX Why not pod says doesn't xfer reference SvREFCNT_dec_NN(this_series); */
 
   check_empty:
     /* Finally, see if the subpattern matches an empty string */
