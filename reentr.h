@@ -357,6 +357,22 @@
 #    undef  USE_PWENT_BUFFER
 #  endif
 
+/* The getspent getspnam using buffer? */
+
+#  if defined(HAS_GETSPNAM_R) && (GETSPNAM_R_PROTO == REENTRANT_PROTO_I_CSBWR || GETSPNAM_R_PROTO == REENTRANT_PROTO_S_CSBI)
+#    define GETSPNAM_R_HAS_BUFFER
+#  else
+#    undef  GETSPNAM_R_HAS_BUFFER
+#  endif
+
+/* Any of the getspent getspnam using buffer? */
+
+#  if (defined(GETSPENT_R_HAS_BUFFER) || defined(GETSPNAM_R_HAS_BUFFER))
+#    define USE_SPENT_BUFFER
+#  else
+#    undef  USE_SPENT_BUFFER
+#  endif
+
 /* The gethostent gethostbyaddr gethostbyname using ptr? */
 
 #  if defined(HAS_GETHOSTENT_R) && (GETHOSTENT_R_PROTO == REENTRANT_PROTO_I_SBWRE)
