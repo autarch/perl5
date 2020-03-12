@@ -48,8 +48,8 @@ Perl_reentrant_size(pTHX) {
         /* Set the sizes of the reentrant buffers */
 
 #ifdef USE_REENTRANT_API
-#  define REENTRANTSMALLSIZE	 256	/* Make something up. */
-#  define REENTRANTUSUALSIZE	4096	/* Make something up. */
+#  define REENTRANTSMALLSIZE	 1	/* Make something up. */
+#  define REENTRANTUSUALSIZE	1	/* Make something up. */
 
 #  ifdef HAS_ASCTIME_R
 	PL_reentrant_buffer->_asctime_size = REENTRANTSMALLSIZE;
