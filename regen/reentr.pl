@@ -885,9 +885,9 @@ Perl_reentrant_retry(const char *f, ...)
     case KEY_gethostbyname:
     case KEY_endhostent:
 	{
-            Netdb_host_t * host_addr;
-            Netdb_hlen_t asize;
-            Netdb_name_t host_name;
+            char * host_addr;
+            Size_t asize;
+            char * host_name;
             int anint;
 
 #    ifdef PERL_REENTRANT_MAXSIZE
@@ -898,12 +898,12 @@ Perl_reentrant_retry(const char *f, ...)
                     &PL_reentrant_buffer->_hostent_size, char);
             switch (key) {
 	        case KEY_gethostbyaddr:
-		    host_addr = va_arg(ap, Netdb_host_t *);
-		    asize = va_arg(ap, Netdb_hlen_t);
+		    host_addr = va_arg(ap, char *);
+		    asize = va_arg(ap, Size_t);
 		    anint  = va_arg(ap, int);
 		    retptr = gethostbyaddr(host_addr, asize, anint); break;
 	        case KEY_gethostbyname:
-		    host_name = va_arg(ap, Netdb_name_t);
+		    host_name = va_arg(ap, char *);
 		    retptr = gethostbyname(host_name); break;
 	        case KEY_endhostent:
 		    retptr = gethostent(); break;
