@@ -23823,7 +23823,8 @@ S_parse_uniprop_string(pTHX_
                     /* Farm this out to a function just to make the current
                      * function less unwieldy */
                     if (handle_names_wildcard(revised_name, revised_name_len,
-                                &prop_definition))
+                                              &prop_definition,
+                                              strings))
                     {
                         return prop_definition;
                     }
