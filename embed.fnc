@@ -1933,6 +1933,7 @@ ES	|SV *	|parse_uniprop_string|NN const char * const name	    \
 				     |const bool to_fold		    \
 				     |const bool runtime		    \
 				     |const bool deferrable		    \
+				     |NULLOK AV ** strings		    \
 				     |NN bool * user_defined_ptr	    \
 				     |NN SV * msg			    \
 				     |const STRLEN level

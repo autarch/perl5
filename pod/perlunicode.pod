@@ -1079,11 +1079,11 @@ matched by your pattern.  It's likely that a future release will raise a
 warning if your pattern ends up causing every possible code point to
 match.
 
-Starting in 5.32, the Name and Name Aliases properties are allowed to be
-matched.  They are considered to be a single combination property, just
-as has long been the case for C<\N{}>.  Loose matching doesn't work in
-exactly the same way for these as it does for the values of other
-properties.  The rules are given in
+Starting in 5.32, the Name, Name Aliases, and Named Sequences properties
+are allowed to be matched.  They are considered to be a single
+combination property, just as has long been the case for C<\N{}>.  Loose
+matching doesn't work in exactly the same way for these as it does for
+the values of other properties.  The rules are given in
 L<https://www.unicode.org/reports/tr44/tr44-24.html#UAX44-LM2>.  As a
 result, Perl doesn't try loose matching for you, like it does in other
 properties.  All letters in names are uppercase, but you can add C<(?i)>

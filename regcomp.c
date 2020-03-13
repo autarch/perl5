@@ -17670,6 +17670,7 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
                     /* If set TRUE, the property is user-defined as opposed to
                      * official Unicode */
                     bool user_defined = FALSE;
+                    AV * strings = NULL;
 
                     SV * prop_definition = parse_uniprop_string(
                                             name, n, UTF, FOLD,
@@ -17680,6 +17681,7 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
                                              * this call */
                                             ! cBOOL(ret_invlist),
 
+                                            &strings,
                                             &user_defined,
                                             msg,
                                             0 /* Base level */
@@ -17697,7 +17699,54 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
                                     SvCUR(msg), SvPVX(msg)));
                     }
 
-                    if (! is_invlist(prop_definition)) {
+                    assert(prop_definition || strings);
+
+                    if (strings) {
+                        if (! RExC_in_multi_char_class) {
+                            if (invert ^ (value == 'P')) {
+                                RExC_parse = e + 1;
+                                vFAIL("Inverting a character class which contains"
+                                    " a multi-character sequence is illegal");
+                            }
+
+                            /* For each multi-character string ... */
+                            while (av_tindex(strings) >= 0) {
+                                /* ... Each entry is itself an array of code
+                                * points. */
+                                AV * this_string = (AV *) av_shift( strings);
+                                STRLEN cp_count = av_tindex(this_string) + 1;
+                                SV * final = newSV(cp_count * 4);
+                                SvPVCLEAR(final);
+
+                                /* Create another string of sequences of \x{...} */
+                                while (av_tindex(this_string) >= 0) {
+                                    SV * character = av_shift(this_string);
+                                    UV cp = SvUV(character);
+
+                                    if (cp > 255) {
+                                        REQUIRE_UTF8(flagp);
+                                    }
+                                    Perl_sv_catpvf(aTHX_ final, "\\x{%" UVXf "}",
+                                                                        cp);
+                                    SvREFCNT_dec_NN(character);
+                                }
+
+                                /* And add that to the list of such things */
+                                multi_char_matches
+                                            = add_multi_match(multi_char_matches,
+                                                            final,
+                                                            cp_count);
+                                SvREFCNT_dec_NN(final);
+                                SvREFCNT_dec_NN(this_string);
+                            }
+                        }
+                        SvREFCNT_dec_NN(strings);
+                    }
+
+                    if (! prop_definition) {
+                        element_count--;
+                    }
+                    else if (! is_invlist(prop_definition)) {
 
                         /* Here, the definition isn't known, so we have gotten
                          * returned a string that will be evaluated if and when
@@ -18443,13 +18492,18 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
         /* If the character class contains anything else besides these
          * multi-character folds, have to include it in recursive parsing */
         if (element_count) {
-            sv_catpvs(substitute_parse, "|[");
+            bool has_l_bracket = orig_parse > RExC_start && *(orig_parse - 1) == '[';
+
+            sv_catpvs(substitute_parse, "|");
+            if (has_l_bracket) {
+                sv_catpvs(substitute_parse, "[");
+            }
             constructed_prefix_len = SvCUR(substitute_parse);
             sv_catpvn(substitute_parse, orig_parse, RExC_parse - orig_parse);
 
             /* Put in a closing ']' only if not going off the end, as otherwise
              * we are adding something that really isn't there */
-            if (RExC_parse < RExC_end) {
+            if (has_l_bracket && RExC_parse < RExC_end) {
                 sv_catpvs(substitute_parse, "]");
             }
         }
@@ -23328,6 +23382,7 @@ S_handle_user_defined_property(pTHX_
         this_definition = parse_uniprop_string(s0, s - s0,
                                                is_utf8, to_fold, runtime,
                                                deferrable,
+                                               NULL,
                                                user_defined_ptr, msg,
                                                (name_len == 0)
                                                 ? level /* Don't increase level
@@ -23517,6 +23572,7 @@ S_parse_uniprop_string(pTHX_
     const bool runtime,         /* TRUE if this is being called at run time */
     const bool deferrable,      /* TRUE if it's ok for the definition to not be
                                    known at this call */
+    AV ** strings,              /* XXX */
     bool *user_defined_ptr,     /* Upon return from this function it will be
                                    set to TRUE if any component is a
                                    user-defined property */
@@ -23816,6 +23872,7 @@ S_parse_uniprop_string(pTHX_
                                                            to_fold,
                                                            runtime,
                                                            deferrable,
+                                                           NULL,
                                                            user_defined_ptr,
                                                            msg,
                                                            level + 1);
@@ -23945,12 +24002,35 @@ S_parse_uniprop_string(pTHX_
             }
 
             cp = valid_utf8_to_uvchr((U8 *) SvPVX(character), &character_len);
-            if (character_len < SvCUR(character)) {
-                /* Temporarily, named sequences aren't handled */
-                goto failed;
+            if (character_len == SvCUR(character)) {
+                prop_definition = add_cp_to_invlist(NULL, cp);
+            }
+            else {
+                AV * this_string;
+
+                /* First of the remaining characters in the string. */
+                char * remaining = SvPVX(character) + character_len;
+
+                if (strings == NULL) {
+                    goto failed;    /* msg instead XXX not available here */
+                }
+
+                if (*strings == NULL) {
+                    *strings = newAV();
+                }
+
+                this_string = newAV();
+                av_push(this_string, newSVuv(cp));
+
+                do {
+                    cp = valid_utf8_to_uvchr((U8 *) remaining, &character_len);
+                    av_push(this_string, newSVuv(cp));
+                    remaining += character_len;
+                } while (remaining < SvEND(character));
+
+                av_push(*strings, (SV *) this_string);
             }
 
-            prop_definition = add_cp_to_invlist(NULL, cp);
             return prop_definition;
         }
 
