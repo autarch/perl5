@@ -5748,9 +5748,9 @@ STATIC bool	S_grok_bslash_N(pTHX_ RExC_state_t *pRExC_state, regnode_offset* nod
 STATIC regnode_offset	S_handle_named_backref(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, char * parse_start, char ch);
 #define PERL_ARGS_ASSERT_HANDLE_NAMED_BACKREF	\
 	assert(pRExC_state); assert(flagp); assert(parse_start)
-STATIC bool	S_handle_names_wildcard(pTHX_ const char * wname, const STRLEN wname_len, SV ** prop_definition);
+STATIC bool	S_handle_names_wildcard(pTHX_ const char * wname, const STRLEN wname_len, SV ** prop_definition, AV ** strings);
 #define PERL_ARGS_ASSERT_HANDLE_NAMES_WILDCARD	\
-	assert(wname); assert(prop_definition)
+	assert(wname); assert(prop_definition); assert(strings)
 STATIC int	S_handle_possible_posix(pTHX_ RExC_state_t *pRExC_state, const char* const s, char ** updated_parse_ptr, AV** posix_warnings, const bool check_only);
 #define PERL_ARGS_ASSERT_HANDLE_POSSIBLE_POSIX	\
 	assert(pRExC_state); assert(s)
